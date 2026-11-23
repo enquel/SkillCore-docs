@@ -7,6 +7,8 @@ title: SkillCore Documentation
 
 Version 1.0 · Unreal Engine 5.8 · Windows (Win64)
 
+Free Windows demo: [SkillCore_Demo_Win64_v1.0.zip](https://github.com/enquel/SkillCore-Demo/releases/tag/v1.0)
+
 ---
 
 
