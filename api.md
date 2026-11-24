@@ -11,15 +11,26 @@ Generated from the doc comments of the public headers (`Source/SkillSet/Public`)
 
 ## SkillComponent.h
 
+### FSkillNetState
+
+What the owning client receives of a skill component in a network game. Built by the server after every change and sent to the owner only. Plain data; read it through the component's normal getters, not directly.
+
+- **Property** `TArray<FSkillTreeSaveData> Trees`: Progress per tree: bought skills, ranks (with what each paid rank cost) and unlocks.
+- **Property** `TArray<FSkillCost> Points`: Points per named pool.
+- **Property** `FGameplayTagContainer GrantedTags`: Tags granted by bought skills.
+- **Property** `TArray<FName> CounterNames`: Names of the counters skills changed, with their values in Counter Values (same order).
+- **Property** `TArray<int32> CounterValues`: Values of the counters named in Counter Names.
+- **Property** `int32 LoadSerial`: Raised by the server on Read Save Data and Reset All, so the client does not report those changes as purchases or refunds.
 ### USkillComponent
 
-Holds one owner's skill progress: named point pools, the state of every skill in its trees, and the effect state skills produce (tags, counters). Put it on a pawn, a controller or an AI actor. Single-player correct; the state is plain structs, so your own replication code can carry it.
+Holds one owner's skill progress: named point pools, the state of every skill in its trees, and the effect state skills produce (tags, counters). Put it on a pawn, a controller, a player state or an AI actor. Multiplayer: the server owns the state and replicates it to the owning client only. On a client, Purchase Skill, Refund Skill Rank, Refund Skill, Respec Tree and Respec All are sent to the server, which checks them exactly as in single player; the result arrives by replication and fires the same events. Grant, unlock, points, reset and load are server calls and are refused on a client. Effects run on the server only.
 
-- **Property** `TArray<TObjectPtr<USkillTree>> Trees`: Trees this owner can use from the start. More can be added at runtime with Add Tree.
+- **Property** `TArray<TObjectPtr<USkillTree>> Trees`: Trees this owner can use from the start. More can be added at runtime with Add Tree. Replicated to the owning client.
 - **Property** `TMap<FName, int32> InitialPoints`: Points given once at begin play, per named pool.
-- **Property** `bool bAllowRefunds`: Players may refund skills (Refund Skill Rank, Refund Skill). Respec Tree and Reset All work either way. Can be changed at runtime, for example only near a trainer.
-- **Property** `int32 RefundPercent`: Share of the cost given back by a refund or respec, 0 to 100. Rounded down per pool.
-- **Property** `TArray<FSkillCost> RefundFee`: Points taken for each refund call (Refund Skill Rank or Refund Skill), for example 1 "Gold". Respec Tree takes no fee. Empty for none.
+- **Property** `bool bAllowRefunds`: Players may refund skills (Refund Skill Rank, Refund Skill). Respec Tree and Reset All work either way. Can be changed at runtime, for example only near a trainer. In a network game set it on the server; the owning client receives it.
+- **Property** `int32 RefundPercent`: Share of the cost given back by a refund or respec, 0 to 100. Rounded down per pool. In a network game set it on the server.
+- **Property** `TArray<FSkillCost> RefundFee`: Points taken for each refund call (Refund Skill Rank or Refund Skill), for example 1 "Gold". Respec Tree takes no fee. Empty for none. In a network game set it on the server.
+- **Property** `bool bAllowClientRespec`: Network game: the owning client may ask the server for Respec Tree and Respec All. A respec gives back every paid rank (at Refund Percent) even when Allow Refunds is off and without the Refund Fee, so it is off by default: turn it on (on the server) only where a player may respec, for example at a trainer. Server code can always respec.
 - **Property** `FSkillPurchasedSignature OnSkillPurchased`: Broadcast after a skill rank was bought or granted and its effects applied (once per rank). Not broadcast when a save is loaded; use On Skill State Changed for that.
 - **Property** `FSkillRankChangedSignature OnSkillRefunded`: Broadcast after a refund (one rank, a whole skill or a respec) with the rank that is left.
 - **Property** `FSkillRankChangedSignature OnSkillRankChanged`: Broadcast whenever the rank of a skill changes: purchase, grant, refund, respec, reset or load.
@@ -27,6 +38,8 @@ Holds one owner's skill progress: named point pools, the state of every skill in
 - **Property** `FSkillPointsChangedSignature OnPointsChanged`: Broadcast when a pool amount changes.
 - **Property** `FSkillTagChangedSignature OnGrantedTagChanged`: Broadcast when a skill effect grants or takes back a gameplay tag.
 - **Property** `FSkillCounterChangedSignature OnCounterChanged`: Broadcast when a skill effect changes a named counter.
+- **Property** `FSkillStateReplicatedSignature OnStateReplicated`: Network game, owning client only: broadcast after new state from the server was applied (after the single events above).
+- **Function** `bool IsNetworkClient() const`: True on a client of a network game, where this component is a copy of the server's. There, purchases, refunds and respecs are sent to the server and the other changing calls are refused.
 - **Function** `bool AddTree(USkillTree* Tree)`: Adds a tree to this owner. Returns false when the tree is invalid, has no id, or a tree with the same id is already added.
 - **Function** `bool HasTree(const USkillTree* Tree) const`: True when the tree is added to this owner.
 - **Function** `void AddPoints(FName PoolId, int32 Amount)`: Adds points to a named pool. A negative amount takes points away (the pool never goes below zero).
@@ -39,13 +52,13 @@ Holds one owner's skill progress: named point pools, the state of every skill in
 - **Function** `int32 GetSkillMaxRank(const USkillTree* Tree, FName SkillId) const`: Highest rank of a skill (1 for a skill bought once, and for unknown skills).
 - **Function** `int32 GetTreeRanks(const USkillTree* Tree) const`: Ranks bought in all skills of a tree together. A tree gate counts the same ranks minus those of the gated skill itself.
 - **Function** `ESkillPurchaseResult CanPurchaseSkill(const USkillTree* Tree, FName SkillId) const`: What Purchase Skill would return right now, without changing anything.
-- **Function** `ESkillPurchaseResult PurchaseSkill(USkillTree* Tree, FName SkillId)`: Buys a skill, or its next rank when it is already bought: checks the rules and points, spends the cost, applies the effects with the new rank.
+- **Function** `ESkillPurchaseResult PurchaseSkill(USkillTree* Tree, FName SkillId)`: Buys a skill, or its next rank when it is already bought: checks the rules and points, spends the cost, applies the effects with the new rank. On a network client: returns the check against the client's copy and, when it passes, asks the server, which checks again and buys; the change arrives by replication.
 - **Function** `bool UnlockSkill(USkillTree* Tree, FName SkillId)`: Makes a skill available without its prerequisites or tree gate (an exclusive group still applies). A bought skill is never changed. Returns true when the state changed.
 - **Function** `bool GrantSkill(USkillTree* Tree, FName SkillId)`: Gives the next rank of a skill for free (no cost, no rules) and applies its effects. Given ranks are never refunded. Returns false when unknown or at the highest rank.
 - **Function** `ESkillRefundResult CanRefundSkill(const USkillTree* Tree, FName SkillId) const`: What Refund Skill Rank would return right now, without changing anything.
-- **Function** `ESkillRefundResult RefundSkillRank(USkillTree* Tree, FName SkillId)`: Gives back the highest rank of a skill: returns its cost (times Refund Percent), takes the Refund Fee and the effects of that rank. Refused when another bought skill needs the rank (a prerequisite, a required rank or a tree gate): refund that skill first. Ranks given by Grant Skill are never refunded.
+- **Function** `ESkillRefundResult RefundSkillRank(USkillTree* Tree, FName SkillId)`: Gives back the highest rank of a skill: returns its cost (times Refund Percent), takes the Refund Fee and the effects of that rank. Refused when another bought skill needs the rank (a prerequisite, a required rank or a tree gate): refund that skill first. Ranks given by Grant Skill are never refunded. On a network client: returns the check and, when it passes, asks the server (see Purchase Skill).
 - **Function** `ESkillRefundResult RefundSkill(USkillTree* Tree, FName SkillId)`: Gives back every paid rank of a skill at once, with the same rules as Refund Skill Rank and one fee.
-- **Function** `bool RespecTree(USkillTree* Tree)`: Full respec of one tree: every paid rank of every refundable skill is given back (times Refund Percent), without fee and without the dependency rule. Given ranks, skills marked not refundable and unlocks stay. Works even when Allow Refunds is off, so the game decides when to offer it. Returns true when anything changed.
+- **Function** `bool RespecTree(USkillTree* Tree)`: Full respec of one tree: every paid rank of every refundable skill is given back (times Refund Percent), without fee and without the dependency rule. Given ranks, skills marked not refundable and unlocks stay. Works even when Allow Refunds is off, so the game decides when to offer it. Returns true when anything changed. On a network client: asks the server when Allow Client Respec is on and returns true when there is a paid rank to give back.
 - **Function** `bool RespecAll()`: Respec Tree for every tree of this owner. Returns true when anything changed.
 - **Function** `void ResetAll(bool bResetPoints = true)`: Forgets every purchase and unlock of all trees and takes back all effects. Optionally empties the point pools too.
 - **Function** `FSkillView GetSkillView(const USkillTree* Tree, FName SkillId) const`: Snapshot of one skill for UI code. Skill Id is empty when the skill is unknown.
@@ -62,6 +75,10 @@ Holds one owner's skill progress: named point pools, the state of every skill in
 - **Function** `bool ReadSaveData(const FSkillSaveData& Data)`: Restores a record: replaces points and progress, then applies the effects of the bought skills once. Returns false (and changes nothing) when the version is unknown. Skills that no longer exist are skipped.
 - **Function** `bool SaveToSlot(const FString& SlotName, int32 UserIndex = 0) const`: Writes the record to a save slot (a file in the project's save folder). The name may hold letters, digits, space, underscore and dash (up to 64). Returns true when the file was written.
 - **Function** `bool LoadFromSlot(const FString& SlotName, int32 UserIndex = 0)`: Reads a record from a save slot and applies it as Read Save Data does. Returns false when the slot is missing or unreadable.
+- **Function** `void ServerPurchaseSkill(USkillTree* Tree, FName SkillId)`: Client to server: Purchase Skill with every single-player check.
+- **Function** `void ServerRefundSkill(USkillTree* Tree, FName SkillId, int32 FromRank, bool bWholeSkill)`: Client to server: Refund Skill Rank (bWholeSkill false) or Refund Skill (true), with every single-player check. From Rank is the rank the client saw; the server refuses when its rank differs, so a refund never takes more than the player asked for.
+- **Function** `void ServerRespec(USkillTree* Tree)`: Client to server: Respec Tree, or Respec All when Tree is null. Refused unless Allow Client Respec is on.
+- **Property** `FSkillNetState NetState`: Replicated to the owner only.
 
 ## SkillConnectionWidget.h
 
@@ -214,7 +231,7 @@ Saved experience of one level component. The level follows from the XP.
 - **Property** `int32 XP`: Total experience.
 ### USkillLevelComponent
 
-Optional experience and levels. Put it next to a Skill Component: every level gained adds points to named pools (Points Per Level), and a level lost takes them back. When the pools hold fewer points than a level down takes, every tree of the Skill Component is respecced first (at its Refund Percent), so spent points come back before they are removed; what is still short leaves the pool at zero. Points are only given while a Skill Component is found. The XP needed per level comes from First Level XP and Level XP Growth, or from an exact list.
+Optional experience and levels. In a network game the server owns the XP and replicates it to the owning client; Add XP, Set XP, Set Level and Read Save Data are server calls (refused on a client), and the events fire on both. Put it next to a Skill Component: every level gained adds points to named pools (Points Per Level), and a level lost takes them back. When the pools hold fewer points than a level down takes, every tree of the Skill Component is respecced first (at its Refund Percent), so spent points come back before they are removed; what is still short leaves the pool at zero. Points are only given while a Skill Component is found. The XP needed per level comes from First Level XP and Level XP Growth, or from an exact list.
 
 - **Property** `int32 MaxLevel`: Highest level.
 - **Property** `int32 FirstLevelXP`: XP from level 1 to level 2.
@@ -237,6 +254,8 @@ Optional experience and levels. Put it next to a Skill Component: every level ga
 - **Function** `USkillComponent* GetSkillComponent() const`: The Skill Component that gets the points (null when there is none).
 - **Function** `FSkillLevelSaveData WriteSaveData() const`: A versioned record of the XP. Store it next to the skill record; the points are saved by the Skill Component.
 - **Function** `bool ReadSaveData(const FSkillLevelSaveData& Data)`: Restores the XP and level without giving or taking points (the Skill Component's own record holds those). Returns false for an unknown version.
+- **Property** `TObjectPtr<USkillComponent> SkillComponent`: True (with a log line) when a server-only call is made on a network client.
+- **Property** `int32 XP`: Total experience; replicated to the owner only. The level follows from it.
 
 ## SkillMenuLibrary.h
 
@@ -263,6 +282,7 @@ The complete skill screen: title, point pools, one tab per category, the tree, t
 - **Property** `FText MenuTitle`: Title at the top of the screen.
 - **Property** `TArray<FName> PoolsToShow`: Pools shown in the header. Empty shows every pool that a skill of the tree costs.
 - **Property** `bool bOfferRespec`: Offers the respec action on this screen (T or the gamepad top face button): every paid rank of the shown tree is given back. Off by default; the game decides when a respec is allowed.
+- **Property** `bool bHostManagesInput`: Another screen hosts this one (for example the Common UI screen of the SkillSetCommonUI extra): the menu then leaves closing (Escape, gamepad back), the input mode and the mouse cursor to the host. Show For and Close Menu still work.
 - **Property** `float FeedbackSeconds`: Seconds the feedback line stays after an action.
 - **Property** `TSubclassOf<USkillTreeWidget> TreeWidgetClass`: Replaces the widget that draws one tab of the tree.
 - **Property** `TSubclassOf<USkillNodeWidget> NodeWidgetClass`: Replaces the widget that draws one skill.
@@ -277,9 +297,15 @@ The complete skill screen: title, point pools, one tab per category, the tree, t
 - **Function** `void ShowFeedback(const FText& Text)`: Shows a message on the feedback line for Feedback Seconds. The screen uses it for purchases, refunds and refusals.
 - **Function** `FText GetFeedback() const`: The text on the feedback line right now (empty when it has faded).
 - **Function** `ESkillRefundResult RefundFocusedSkill()`: Refunds one rank of the skill under the cursor or focus, as Backspace does.
+- **Function** `ESkillPurchaseResult PurchaseFocusedSkill()`: Buys the skill (or its next rank) under the cursor or focus, as a click or Enter does. Unknown Skill when nothing is focused.
+- **Function** `bool FocusSkill(FName SkillId)`: Moves focus to a skill (switching to its tab when needed), so the details panel and the focused-skill actions use it. Returns false when the skill is not in the tree.
+- **Function** `FName GetFocusedSkill() const`: The skill the details panel shows (focused or hovered), or None.
+- **Function** `USkillTree* GetTree() const`: The tree shown, or null before Setup Menu.
+- **Function** `USkillComponent* GetSkillComponent() const`: The skill component shown, or null before Setup Menu.
 - **Function** `bool RespecShownTree()`: Respecs the shown tree, as the respec key does (also when Offer Respec is off). Returns true when anything changed.
 - **Function** `void ShowFor(APlayerController* PlayerController)`: Adds the menu to the screen of a player, switches input to the menu and focuses the first skill.
 - **Function** `void CloseMenu()`: Takes the menu off the screen and gives input back to the game.
+- **Function** `void HandleStateReplicated()`: Network client: the server's answer arrived.
 
 ## SkillNodeWidget.h
 

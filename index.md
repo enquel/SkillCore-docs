@@ -5,9 +5,9 @@ title: SkillSet Documentation
 
 [Home](./) · [API reference](api.html) · Support: [Discord](https://discord.gg/VNmNpzVAEB)
 
-Version 1.1 · Unreal Engine 5.8 · Windows (Win64)
+Version 1.2 · Unreal Engine 5.8 · Windows (Win64)
 
-Free Windows demo: [SkillSet_Demo_Win64_v1.1.zip](https://github.com/enquel/SkillSet-Demo/releases/tag/v1.1)
+Free Windows demo: [SkillSet_Demo_Win64_v1.2.zip](https://github.com/enquel/SkillSet-Demo/releases/tag/v1.2)
 
 ---
 
@@ -131,6 +131,22 @@ Nothing in the core depends on an attribute system, inventory, save system or pl
 
 A component refuses a tree that has errors and logs the reasons. Two tree assets with the same Tree Id are refused as well.
 
+## Graph editor
+
+Double-click a **Skill Tree** asset to open it in the graph editor. Every skill is a card (category colour, icon, title, id, ranks, cost, and badges for its rules: choose-one group, tier gate, ranks needed of a prerequisite, starts unlocked, any one prerequisite, not refundable). The tree asset stays the only source of truth: the graph is built from it each time it opens, every edit changes the asset and is one undo step, and nothing about the graph is saved separately. Existing trees open as they are; the asset format did not change.
+
+- **Add a skill:** right click the graph and choose **New Skill**. It is stored inside the tree asset (no extra file). To use a skill asset that several trees share, drag it from the Content Browser onto the graph. **Add > SkillSet** in the Content Browser creates new **Skill Tree** and **Skill** assets.
+- **Prerequisites are wires:** drag from the out pin of a skill to the in pin of the skill that needs it. The graph follows the direction your tree runs: pins at the bottom and top for a tree that grows downwards, at the right and left for one that grows to the right (as the samples do). Loops, a skill needing itself and a second wire to the same prerequisite are refused with the reason. Alt+click a pin, or right click it and choose **Remove These Links**, to remove wires (the card menu also has **Remove All Prerequisite Links**). The rank of a prerequisite that a skill needs is set in the details panel (**Required Ranks**) or with the right click menu **Required Rank of Prerequisite**; a wire that needs more than rank 1 is drawn thicker.
+- **Position:** drag a card and it snaps to the grid cell the skill screen uses (the cell is written to the tree when you let go). **Auto Layout** in the toolbar places each category from its roots, in rows or columns as the tree runs.
+- **Categories:** each category has its own colour and its own band, side by side; the toolbar picker shows one category at a time. New skills go to the shown category. Right click a card > **Move to Category** changes it.
+- **Delete, cut, copy, paste, duplicate** work on the selected cards. Copies get fresh ids; prerequisites inside the copied set point to the copies. Deleting a skill removes it from every prerequisite list of the tree.
+- **Details:** with one or more cards selected the details panel edits those skills; with nothing selected it edits the tree (id, title, categories). Changing a **Skill Id** updates every reference in the tree; an empty or duplicate id is put back.
+- **Validation:** the tree is checked after every edit. Cards with an error get a red outline and the message, warnings an orange one; the toolbar shows the count. **Validate** also writes the list to the **SkillSet** message log.
+
+A skill asset shared by several trees is edited for all of them: wiring or renaming it in one tree changes the asset, and only the tree you have open updates its references. Skills stored inside a tree belong to that tree alone.
+
+The data-asset workflow still works: the same properties can be edited in the details panel of the asset as before.
+
 ## Saving
 
 **Write Save Data** returns a versioned struct (`FSkillSaveData`, format version 2) with the points and the progress of every tree, including the rank of every bought skill and how many of its ranks were given. Version 1 records (from SkillSet 1.0) load: every bought skill gets rank 1. **Read Save Data** restores it, applies the effects of the bought skills once, and returns false (changing nothing) when the version is not one it can read. Skills that no longer exist in a tree are skipped with a warning. A record can be read before the trees are added; each tree takes its part when it arrives.
@@ -150,7 +166,7 @@ Under the tree a feedback line says what the last action did or why it was refus
 
 ### Style
 
-Create a **Skill Core Style** data asset to change colours, corner radius, outline width, hover scale, node and cell sizes, font sizes, zoom limits and the three sounds (purchase, denied, focus). The sample style asset (`DA_SampleStyle`) is an amber variant of the default blue look. Assign it in **Project Settings > Plugins > SkillSet**, or pass it to **Open Skill Menu**. Without one the built-in look is used.
+Create a **Skill Set Style** data asset to change colours, corner radius, outline width, hover scale, node and cell sizes, font sizes, zoom limits and the three sounds (purchase, denied, focus). The sample style asset (`DA_SampleStyle`) is an amber variant of the default blue look. Assign it in **Project Settings > Plugins > SkillSet**, or pass it to **Open Skill Menu**. Without one the built-in look is used.
 
 ### Replacing parts
 
@@ -171,15 +187,44 @@ The nodes are buttons, so mouse, keyboard and gamepad all use the same click: th
 
 **Gamepad cursor (optional).** Turn on **Gamepad Cursor** in the style asset and the left stick moves the system cursor over the screen while the bottom face button clicks where it points. **Gamepad Cursor Speed** sets how fast it moves. The d-pad still moves focus, and using it hands the face button back to the focused skill. The cursor is switched on only while the screen is open. The demo has it on.
 
-## Limits of version 1.1
+## Multiplayer
 
-- No graph editor for the layout: positions are grid coordinates in the tree asset.
-- Single-player behaviour. The state is plain structs, but the component does not replicate and multiplayer is not supported.
+The **Skill Component** and the **Skill Level Component** replicate. The server owns the state; nothing changes for a single-player game.
+
+**Where to put them.** On the player state (recommended: it survives the pawn), the player controller or the pawn. The owning client sends its requests through the component, so the actor must belong to that player's connection; on an actor owned by nobody, client requests are dropped.
+
+**What replicates, to the owning client only:** the trees of the component, the progress of every tree (bought ranks, given ranks, what each paid rank cost, unlocked skills), the point pools, the tags and counters that skill effects set, and the refund settings (**Allow Refunds**, **Refund Percent**, **Refund Fee**, **Allow Client Respec**). The level component sends its XP; the level follows from it. Other players receive none of it: their copy of the component is empty. The state is sent again only when it changes.
+
+**Who may call what:**
+
+| Call | On the server (or single player) | On the owning client |
+|---|---|---|
+| Purchase Skill | runs | checked against the client's copy (rules and points), then sent to the server, which checks everything again |
+| Refund Skill Rank, Refund Skill | runs | checked, then sent; the server refuses when its rank differs from what the client saw |
+| Respec Tree, Respec All | runs | sent only when **Allow Client Respec** is on (off by default, because a respec ignores Allow Refunds and the fee) |
+| Grant Skill, Unlock Skill, Add Points, Set Points, Collect From Source, Reset All, Add Tree | runs | refused with a log line |
+| Read Save Data, Load From Slot, Save To Slot | runs | refused with a log line (saving is a server call) |
+| Add XP, Set XP, Set Level, level Read Save Data | runs | refused with a log line |
+| Getters, Get Skill View, Can Purchase Skill, Write Save Data | runs | runs on the replicated copy |
+
+Server RPCs (called for you by the functions above): `ServerPurchaseSkill`, `ServerRefundSkill`, `ServerRespec`. A client that sends them directly gets the same checks as single player: it cannot buy without points, past prerequisites, gates or choose-one groups, or refund what the server does not allow.
+
+**Events on the owning client.** When new state arrives, the client fires the same events as the server: **On Skill Purchased** (once per rank), **On Skill Refunded**, **On Skill Rank Changed**, **On Skill State Changed**, **On Points Changed**, **On Granted Tag Changed**, **On Counter Changed**, then **On State Replicated**. A save loaded or a reset on the server, and the state a player receives when joining, report no purchases or refunds, as on the server. The skill screen redraws from these events; on a client its feedback line waits for the server's answer ("The server refused the change" when none comes).
+
+**Effects run on the server only.** Value modifiers, tags and counters are applied there; tags and counters reach the owning client. Stats a value modifier changes belong to your own components, which replicate them as you choose. The GAS bridge grants abilities and effects with authority, and the Gameplay Ability System replicates them. For local reactions (sounds, a hotbar, UI) bind to the events above.
+
+**Joining, leaving, returning.** A player who joins mid-game receives the full state of its component at once. To give a returning player their progress, call **Read Save Data** (or **Load From Slot**) on the server for their new component; the client receives it the same way.
+
+**How it was tested.** Play In Editor in one process: a listen server with one client, and a dedicated server with two clients plus a third player joining mid-game and a player leaving and returning. See **Tests** below for the list.
+
+## Limits of version 1.2
+
+- Multiplayer: no client prediction (the screen updates when the server answers, one round trip). Trees must be assets (a tree made at runtime cannot be sent to clients). Effects run on the server only. Other players cannot see a player's skills unless your game replicates them. Tested in Play In Editor (one process), not over a real network with latency or packet loss. The free demo is single-player.
+- Graph editor: one graph per tree asset; positions are whole grid cells. A skill asset shared by several trees is changed for all of them, and only the open tree updates its references after a rename.
 - Refunds refuse when another skill depends on the rank; there is no cascading refund.
 - No search box on the screen.
-- The core has no Gameplay Ability System, Common UI or Enhanced Input dependency. The optional GAS bridge (below) gives abilities and gameplay effects; there is no Common UI or Enhanced Input bridge (the screen uses UMG focus, so open it from your own input action).
+- The core has no Gameplay Ability System, Common UI or Enhanced Input dependency. Optional bridges for GAS and Common UI are in `Extras`.
 - Windows (Win64) and Unreal Engine 5.8 only.
-- A skill's effects run on the owner that bought it; effects are not replicated.
 
 ## Save with SaveHub (optional)
 
@@ -201,13 +246,39 @@ The folder `Extras/SkillSetGAS` holds a small bridge plugin for projects that us
 
 The ability system component is found on the owner, its components, or (for a controller) its pawn. Abilities and effects are given only where the owner has authority. A refund, respec or reset takes them back; a rank change sets the level of the same ability spec and the same active effect (a running ability keeps running). Each tree that holds the skill gives its own grant. Instant gameplay effects are refused with a warning, because they could not be taken back. Without GAS, leave the folder where it is; it is not built unless you copy it out and enable it.
 
+## Common UI (optional)
+
+The folder `Extras/SkillSetCommonUI` holds a small bridge plugin for games whose menus use Common UI:
+
+1. Copy `Extras/SkillSetCommonUI` to `YourProject/Plugins/SkillSetCommonUI` and enable SkillSet, Common UI and SkillSetCommonUI.
+2. Push a **Skill Common Screen** on your layer stack (or create it, add it and call **Activate Widget**), then call **Setup Screen** with the skill component and the tree.
+
+The screen hosts the normal skill screen and gives input to Common UI:
+
+- **Back** closes the screen through Common UI's back action (the one set in your project's Common Input settings). The hosted screen no longer handles Escape or the gamepad B button itself and leaves the input mode and the mouse cursor to Common UI, so nothing fights over Esc/B. **Back Action** on the screen adds a back action of its own.
+- **Buy**, **Refund** and **Respec** are Common UI input actions: set **Buy Action**, **Refund Action** and **Respec Action** to rows of your Common UI input action data table, or set the Enhanced Input versions. They appear in your action bar with the icon of the current platform, and Common UI routes them only while the screen is the active one. Refund works only while the component allows refunds; Respec only with **Offer Respec**.
+- Focus goes to the skill the details panel shows, else to the first skill that can be bought. **Get Menu** gives the hosted screen (to change its style, call **Focus Skill** or bind its events). A Blueprint subclass can have its own layout (for example with an action bar) and a Border named `MenuHost` for the skill screen.
+
+Short sample (Blueprint, in your HUD or menu widget): `Push Widget` (class **Skill Common Screen**) on the menu layer, then on the returned screen `Setup Screen` (Component = the player's Skill Component, Tree = the tree to show). In C++:
+
+```cpp
+USkillCommonScreen* Screen = MenuStack->AddWidget<USkillCommonScreen>(USkillCommonScreen::StaticClass());
+Screen->SetupScreen(PlayerState->FindComponentByClass<USkillComponent>(), WarriorTree);
+```
+
+Without Common UI, leave the folder where it is; it is not built unless you copy it out and enable it.
+
 ## Tests
 
-The plugin ships automation tests (rules, ranks, refunds and respec, gates and exclusive groups, component, save including version 1 records, levels, validation, widgets and grid navigation, gamepad cursor maths, sample content, sample unlocker; the two bridges have their own). Run them with:
+The plugin ships automation tests (rules, ranks, refunds and respec, gates and exclusive groups, component, save including version 1 records, levels, validation, widgets and grid navigation, gamepad cursor maths, sample content, sample unlocker, the graph editor, multiplayer; the three bridges have their own). Run them with:
 
 ```
 UnrealEditor-Cmd.exe YourProject.uproject -ExecCmds="Automation RunTests SkillSet" -TestExit="Automation Test Queue Empty" -unattended -nullrhi -nosplash
 ```
+
+The graph editor tests (`SkillSet.Graph.*`) open trees in the graph and check adding, wiring (and refused loops), removing, moving and snapping, auto layout, copy, paste and duplicate, renaming, validation marks, undo and redo, a save and load of the asset, and that a double click opens the graph editor.
+
+The multiplayer tests (`SkillSet.Multiplayer.*`) start Play In Editor with a listen server and one client, and with a dedicated server and two clients. They check that a purchase on a client shows on the server and the client, that the client hears one purchase event per rank and none for a load, that refunds and respecs replicate, that server-only calls are refused on a client, that a cheating client sending the server calls directly cannot buy without points, buy a gated skill or respec when not allowed, that the other client receives none of the owner-only state, that a player joining mid-game and a returning player receive their full state, and that XP and levels replicate. They restore the editor's play settings afterwards.
 
 The sample assets were generated by the console command `SkillSet.BuildSamples` (editor only).
 
