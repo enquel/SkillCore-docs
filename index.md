@@ -1,25 +1,25 @@
 ---
 layout: default
-title: SkillCore Documentation
+title: SkillSet Documentation
 ---
 
 [Home](./) · [API reference](api.html) · Support: [Discord](https://discord.gg/VNmNpzVAEB)
 
 Version 1.1 · Unreal Engine 5.8 · Windows (Win64)
 
-Free Windows demo: [SkillCore_Demo_Win64_v1.1.zip](https://github.com/enquel/SkillCore-Demo/releases/tag/v1.1)
+Free Windows demo: [SkillSet_Demo_Win64_v1.1.zip](https://github.com/enquel/SkillSet-Demo/releases/tag/v1.1)
 
 ---
 
-SkillCore is a skill tree plugin for Unreal Engine 5.8. You describe skills and trees as data assets, give each owner a component, and the plugin keeps track of prerequisites, ranks, costs, unlocking, refunds, effects and saving. The core is C++ with a full Blueprint API. A ready-made screen is built in code, so you can see a working tree on day one, and every part of it can be restyled or replaced.
+SkillSet is a skill tree plugin for Unreal Engine 5.8. You describe skills and trees as data assets, give each owner a component, and the plugin keeps track of prerequisites, ranks, costs, unlocking, refunds, effects and saving. The core is C++ with a full Blueprint API. A ready-made screen is built in code, so you can see a working tree on day one, and every part of it can be restyled or replaced.
 
 Platform: Windows (Win64), Unreal Engine 5.8. Full C++ source is included.
 
 ## Two-minute demo
 
-1. Copy the `SkillCore` folder into your project's `Plugins` folder and open the project. Enable the plugin if the editor asks.
+1. Copy the `SkillSet` folder into your project's `Plugins` folder and open the project. Enable the plugin if the editor asks.
 2. In the Content Browser open the settings (the eye icon) and turn on **Show Plugin Content**.
-3. Open `SkillCore Content > Samples > Maps > L_SkillCoreDemo` and press Play.
+3. Open `SkillSet Content > Samples > Maps > L_SkillSetDemo` and press Play.
 4. The skill screen opens with the **Warrior** tree. You start with 5 points. Sharpened Blade and Tough Skin have ranks (click again to raise them), Whirlwind needs 6 ranks in the other Warrior skills, and Berserker and Sentinel are a choose-one pair.
 
 Keys in the demo:
@@ -66,7 +66,7 @@ if (Skills->PurchaseSkill(MyTree, TEXT("WarBlade")) == ESkillPurchaseResult::Suc
 USkillMenuLibrary::OpenSkillMenu(PlayerController, Skills, MyTree, nullptr);
 ```
 
-Add `SkillCore` to your module's `PublicDependencyModuleNames`.
+Add `SkillSet` to your module's `PublicDependencyModuleNames`.
 
 ## Concepts
 
@@ -133,7 +133,7 @@ A component refuses a tree that has errors and logs the reasons. Two tree assets
 
 ## Saving
 
-**Write Save Data** returns a versioned struct (`FSkillSaveData`, format version 2) with the points and the progress of every tree, including the rank of every bought skill and how many of its ranks were given. Version 1 records (from SkillCore 1.0) load: every bought skill gets rank 1. **Read Save Data** restores it, applies the effects of the bought skills once, and returns false (changing nothing) when the version is not one it can read. Skills that no longer exist in a tree are skipped with a warning. A record can be read before the trees are added; each tree takes its part when it arrives.
+**Write Save Data** returns a versioned struct (`FSkillSaveData`, format version 2) with the points and the progress of every tree, including the rank of every bought skill and how many of its ranks were given. Version 1 records (from SkillSet 1.0) load: every bought skill gets rank 1. **Read Save Data** restores it, applies the effects of the bought skills once, and returns false (changing nothing) when the version is not one it can read. Skills that no longer exist in a tree are skipped with a warning. A record can be read before the trees are added; each tree takes its part when it arrives.
 
 For a quick start there are **Save To Slot** and **Load From Slot**, which use the engine's save game slots. The struct also fits into any save system you already have. Effect state (tags, counters, modifiers) is not saved; it is rebuilt from the bought skills.
 
@@ -150,7 +150,7 @@ Under the tree a feedback line says what the last action did or why it was refus
 
 ### Style
 
-Create a **Skill Core Style** data asset to change colours, corner radius, outline width, hover scale, node and cell sizes, font sizes, zoom limits and the three sounds (purchase, denied, focus). The sample style asset (`DA_SampleStyle`) is an amber variant of the default blue look. Assign it in **Project Settings > Plugins > SkillCore**, or pass it to **Open Skill Menu**. Without one the built-in look is used.
+Create a **Skill Core Style** data asset to change colours, corner radius, outline width, hover scale, node and cell sizes, font sizes, zoom limits and the three sounds (purchase, denied, focus). The sample style asset (`DA_SampleStyle`) is an amber variant of the default blue look. Assign it in **Project Settings > Plugins > SkillSet**, or pass it to **Open Skill Menu**. Without one the built-in look is used.
 
 ### Replacing parts
 
@@ -183,18 +183,18 @@ The nodes are buttons, so mouse, keyboard and gamepad all use the same click: th
 
 ## Save with SaveHub (optional)
 
-SkillCore saves through a plain struct and slot helpers, and needs no other plugin. If your project uses the SaveHub plugin, the folder `Extras/SkillCoreSaveHub` holds a small bridge plugin:
+SkillSet saves through a plain struct and slot helpers, and needs no other plugin. If your project uses the SaveHub plugin, the folder `Extras/SkillSetSaveHub` holds a small bridge plugin:
 
-1. Copy `Extras/SkillCoreSaveHub` to `YourProject/Plugins/SkillCoreSaveHub` and enable SkillCore, SaveHub and SkillCoreSaveHub.
+1. Copy `Extras/SkillSetSaveHub` to `YourProject/Plugins/SkillSetSaveHub` and enable SkillSet, SaveHub and SkillSetSaveHub.
 2. Add a **Skill SaveHub Link** component next to the **Skill Component**.
 
 The link registers itself with SaveHub when play begins. The points, bought skills and unlocked skills are then written to every slot, read on every load and reset on a new game. **Save Key** names the record (use a different one for a second skill component). The record is JSON text. Without SaveHub, leave the folder where it is; it is not built unless you copy it out and enable it.
 
 ## Gameplay Ability System (optional)
 
-The folder `Extras/SkillCoreGAS` holds a small bridge plugin for projects that use the Gameplay Ability System:
+The folder `Extras/SkillSetGAS` holds a small bridge plugin for projects that use the Gameplay Ability System:
 
-1. Copy `Extras/SkillCoreGAS` to `YourProject/Plugins/SkillCoreGAS` and enable SkillCore, Gameplay Abilities and SkillCoreGAS.
+1. Copy `Extras/SkillSetGAS` to `YourProject/Plugins/SkillSetGAS` and enable SkillSet, Gameplay Abilities and SkillSetGAS.
 2. Add the effects to a skill's **Effects** list:
    - **Grant Gameplay Ability**: gives an ability while the skill is bought. The ability level is the skill rank (or a fixed **Level**).
    - **Apply Gameplay Effect**: applies a gameplay effect (use an infinite one) while the skill is bought, at a level that is the skill rank. Use the level in the effect's scalable magnitudes for "+5 % per rank".
@@ -206,10 +206,10 @@ The ability system component is found on the owner, its components, or (for a co
 The plugin ships automation tests (rules, ranks, refunds and respec, gates and exclusive groups, component, save including version 1 records, levels, validation, widgets and grid navigation, gamepad cursor maths, sample content, sample unlocker; the two bridges have their own). Run them with:
 
 ```
-UnrealEditor-Cmd.exe YourProject.uproject -ExecCmds="Automation RunTests SkillCore" -TestExit="Automation Test Queue Empty" -unattended -nullrhi -nosplash
+UnrealEditor-Cmd.exe YourProject.uproject -ExecCmds="Automation RunTests SkillSet" -TestExit="Automation Test Queue Empty" -unattended -nullrhi -nosplash
 ```
 
-The sample assets were generated by the console command `SkillCore.BuildSamples` (editor only).
+The sample assets were generated by the console command `SkillSet.BuildSamples` (editor only).
 
 ## API list
 
@@ -218,3 +218,5 @@ The [API reference](api.html) lists every public class, function and property wi
 ## Support
 
 Discord: https://discord.gg/VNmNpzVAEB
+
+Online documentation: https://enquel.github.io/SkillSet-docs/

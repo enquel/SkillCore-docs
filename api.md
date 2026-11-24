@@ -1,13 +1,13 @@
 ---
 layout: default
-title: SkillCore API reference
+title: SkillSet API reference
 ---
 
 [Home](./) · [API reference](api.html) · Support: [Discord](https://discord.gg/VNmNpzVAEB)
 
 ---
 
-Generated from the doc comments of the public headers (`Source/SkillCore/Public`). The same text is the tooltip of the Blueprint node.
+Generated from the doc comments of the public headers (`Source/SkillSet/Public`). The same text is the tooltip of the Blueprint node.
 
 ## SkillComponent.h
 
@@ -70,160 +70,10 @@ Holds one owner's skill progress: named point pools, the state of every skill in
 A line between two points of the tree canvas. It fills the whole canvas and draws one link. To change how links look, make a Blueprint subclass, turn off Draw Default Link, draw in its On Paint event (the end points come from Get Link Points) and pick it as the connection class of the menu.
 
 - **Property** `bool bDrawDefaultLink`: Off: the built-in curve is not drawn, so a Blueprint skin can draw its own in On Paint.
-- **Function** `void SetLink(FVector2D InFrom, FVector2D InTo, bool bInActive, const USkillCoreStyle* InStyle)`: Sets the two end points (pixels inside the canvas) and whether the link is active.
+- **Function** `void SetLink(FVector2D InFrom, FVector2D InTo, bool bInActive, const USkillSetStyle* InStyle)`: Sets the two end points (pixels inside the canvas) and whether the link is active.
 - **Function** `void SetActive(bool bInActive)`: Changes only the active state (the first skill of the link was bought).
 - **Function** `void GetLinkPoints(FVector2D& OutFrom, FVector2D& OutTo) const`: The two end points of the link, in pixels inside the canvas.
 - **Function** `bool IsActive() const`: True when the first skill of the link is bought.
-
-## SkillCoreSettings.h
-
-### USkillCoreSettings
-
-Project settings for SkillCore (Project Settings > Plugins > SkillCore).
-
-- **Property** `TSoftObjectPtr<USkillCoreStyle> DefaultStyle`: Style used by the ready-made widgets when a widget has none of its own. Empty uses the built-in look.
-- **Property** `FName DefaultPoolId`: The point pool the sample menu and the helper functions use when none is named.
-
-## SkillCoreStyle.h
-
-### USkillCoreStyle
-
-Look and sound of the ready-made skill widgets: colours, sizes and sounds in one asset. Create one in the content browser (Miscellaneous > Data Asset > Skill Core Style), edit it, and assign it to the menu widget or to the project settings. Without an asset the built-in defaults are used.
-
-- **Property** `FLinearColor BackgroundColor`: Screen backdrop.
-- **Property** `FLinearColor PanelColor`: Side panel and tab strip.
-- **Property** `FLinearColor NodeFillColor`: Inside colour of a skill card (state colours tint it).
-- **Property** `FLinearColor PanelOutlineColor`: Thin line around panels.
-- **Property** `FLinearColor TextColor`: Main text colour.
-- **Property** `FLinearColor SubtleTextColor`: Secondary text colour (costs, hints).
-- **Property** `FLinearColor LockedColor`: Node tint while the skill is locked.
-- **Property** `FLinearColor AvailableColor`: Node tint while the skill can be bought.
-- **Property** `FLinearColor UnaffordableColor`: Node tint for an available skill the owner cannot afford.
-- **Property** `FLinearColor PurchasedColor`: Tint and outline of a bought skill.
-- **Property** `FLinearColor FocusColor`: Outline of the node that has focus (mouse hover, keyboard or gamepad).
-- **Property** `FLinearColor LineInactiveColor`: Link line between two skills when the first one is not bought.
-- **Property** `FLinearColor LineActiveColor`: Link line when the first skill is bought.
-- **Property** `float LineThickness`: Thickness of the link lines, in pixels.
-- **Property** `float CornerRadius`: Corner radius of cards, tabs and panels, in pixels.
-- **Property** `float OutlineWidth`: Width of the coloured line around a skill card.
-- **Property** `float HighlightScale`: Scale of a skill card under the mouse or focus. 1 turns the effect off.
-- **Property** `FVector2D CellSize`: Pixels per grid cell of the tree.
-- **Property** `FVector2D NodeSize`: Size of one skill node.
-- **Property** `FVector2D IconSize`: Size of the icon on a card and in the details panel.
-- **Property** `FVector2D TreePadding`: Free space around the tree inside its scroll area.
-- **Property** `float DetailsPanelWidth`: Width of the side panel, in pixels.
-- **Property** `float MinZoom`: Smallest zoom of the tree view (1 is full size).
-- **Property** `float MaxZoom`: Largest zoom of the tree view.
-- **Property** `float ZoomStep`: Zoom change per mouse wheel notch or key press.
-- **Property** `float StickPanSpeed`: Pixels per second the gamepad right stick pans at full tilt.
-- **Property** `bool bGamepadCursor`: Gamepad cursor: the left stick moves the system cursor and the bottom face button clicks where it points. The d-pad keeps moving focus. Off by default.
-- **Property** `float GamepadCursorSpeed`: Pixels per second the gamepad cursor moves at full tilt.
-- **Property** `float TriggerZoomSpeed`: Zoom per second the gamepad triggers change at full pull.
-- **Property** `float FitMaxZoom`: Largest zoom Fit To View uses, so a small tree is enlarged but not blown up.
-- **Property** `bool bFitOnOpen`: Fit the whole tree into view when a tab opens.
-- **Property** `int32 TitleFontSize`: Font size of titles.
-- **Property** `int32 BodyFontSize`: Font size of body text.
-- **Property** `int32 NodeFontSize`: Font size of the text on skill cards.
-- **Property** `TSoftObjectPtr<USoundBase> PurchaseSound`: Played after a successful purchase. Leave empty for silence.
-- **Property** `TSoftObjectPtr<USoundBase> DeniedSound`: Played when a purchase is refused (locked, too expensive).
-- **Property** `TSoftObjectPtr<USoundBase> RefundSound`: Played after a successful refund. Leave empty for silence.
-- **Property** `TSoftObjectPtr<USoundBase> FocusSound`: Played when focus moves to another node.
-- **Function** `FLinearColor GetNodeColor(ESkillState State, bool bCanAfford) const`: Tint for a skill state. Used by the node widget and available to your own skins.
-
-## SkillCoreTypes.h
-
-### ESkillState
-
-State of one skill for one owner.
-
-### ESkillPurchaseResult
-
-Result of asking for, or attempting, a purchase.
-
-### ESkillRefundResult
-
-Result of asking for, or attempting, a refund.
-
-### ESkillModifierOp
-
-How a value modifier combines with the value it targets.
-
-### FSkillCost
-
-A price: an amount taken from one named point pool.
-
-- **Property** `FName PoolId`: The named pool the points come from, for example "Points" or "Talent".
-- **Property** `int32 Amount`: Points taken from the pool when the skill is bought.
-### FSkillRankCost
-
-The price of one rank of a skill.
-
-- **Property** `TArray<FSkillCost> Costs`: Points taken from named pools for this rank. Empty means the rank is free.
-### FSkillCategory
-
-A tab of a tree. Categories are data, not an enum.
-
-- **Property** `FName CategoryId`: Stable key referenced by the skills of the tree.
-- **Property** `FText Title`: Name shown on the tab.
-- **Property** `TSoftObjectPtr<UTexture2D> Icon`: Optional tab icon.
-### FSkillView
-
-Read-only snapshot of one skill for UI code.
-
-- **Property** `FName TreeId`: Id of the tree.
-- **Property** `FName SkillId`: Id of the skill.
-- **Property** `FName CategoryId`: Id of the category (tab).
-- **Property** `FText Title`: Display name.
-- **Property** `FText Description`: Text shown in the details panel.
-- **Property** `TSoftObjectPtr<UTexture2D> Icon`: Icon texture.
-- **Property** `FVector2D Position`: Position in grid cells inside the category.
-- **Property** `ESkillState State`: State of the skill.
-- **Property** `TArray<FSkillCost> Costs`: Points the next rank costs (the first rank while the skill is not bought). Empty when the skill is free or at its highest rank.
-- **Property** `int32 Rank`: Ranks bought (0 while not bought).
-- **Property** `int32 MaxRank`: Highest rank of the skill (1 for a skill that is bought once).
-- **Property** `int32 FreeRanks`: Ranks given by Grant Skill. They are never refunded.
-- **Property** `TArray<FName> Prerequisites`: Skills that must be bought first.
-- **Property** `TArray<FText> PrerequisiteTitles`: The titles of the prerequisites, in the same order, for display.
-- **Property** `TArray<int32> PrerequisiteRanks`: The rank each prerequisite needs, in the same order (1 unless the skill asks for more).
-- **Property** `bool bAnyPrerequisite`: True when one prerequisite is enough, false when all are needed.
-- **Property** `int32 RequiredTreeRanks`: Ranks that must be bought in the other skills of the tree before this one (0 for none).
-- **Property** `int32 TreeRanks`: Ranks currently bought in the other skills of the tree, to show next to Required Tree Ranks.
-- **Property** `FName ExclusiveGroup`: Name of the exclusive group (None when the skill has none).
-- **Property** `TArray<FText> ExclusiveWith`: Titles of the other skills of the exclusive group.
-- **Property** `FText ExcludedBy`: Title of the bought skill that excludes this one; empty when none does.
-- **Property** `bool bCanAfford`: True when every cost pool holds enough points for the next rank right now.
-- **Property** `bool bCanPurchase`: True when a purchase (of the next rank) would succeed right now.
-- **Property** `ESkillPurchaseResult PurchaseResult`: What Purchase Skill would return right now.
-- **Property** `bool bCanRefund`: True when refunding one rank would succeed right now.
-- **Property** `ESkillRefundResult RefundResult`: What Refund Skill Rank would return right now.
-- **Property** `TArray<FSkillCost> RefundValue`: Points one refunded rank gives back (after the refund percent).
-- **Property** `bool bRefundable`: False when the skill is marked not refundable (permanent).
-- **Property** `FText RefundBlockedBy`: Title of a bought skill that stops the refund (Refund Result is Required By Other).
-- **Property** `TArray<FText> CurrentEffects`: What the effects do at the current rank, one line per effect that describes itself. Empty while not bought.
-- **Property** `TArray<FText> NextEffects`: What the effects will do at the next rank. Empty at the highest rank.
-### FSkillRankSaveData
-
-Saved rank of one skill.
-
-- **Property** `FName SkillId`: Id of the skill.
-- **Property** `int32 Rank`: Ranks bought, including given ranks.
-- **Property** `int32 FreeRanks`: Ranks given by Grant Skill (never refunded).
-- **Property** `TArray<FSkillRankCost> PaidCosts`: What each paid rank cost, oldest first; a refund gives this back. When it is missing, the current rank costs are used.
-### FSkillTreeSaveData
-
-Saved progress of one tree.
-
-- **Property** `FName TreeId`: Id of the tree.
-- **Property** `TArray<FName> Purchased`: Bought skills, in purchase order (of their first rank).
-- **Property** `TArray<FSkillRankSaveData> Ranks`: Rank of each bought skill (format version 2). A bought skill missing here has rank 1, as in version 1 records.
-- **Property** `TArray<FName> Unlocked`: Skills unlocked directly (shown as available without prerequisites).
-### FSkillSaveData
-
-Versioned save record of one skill component. Store it in any save system: it is a plain struct. Effect state (tags, counters, modifiers) is not saved; it is rebuilt by applying the bought skills on load.
-
-- **Property** `int32 Version`: Format version of this record. Written by Write Save Data; checked and migrated by Read Save Data.
-- **Property** `TMap<FName, int32> Points`: Points held per named pool.
-- **Property** `TArray<FSkillTreeSaveData> Trees`: Saved progress of each tree.
 
 ## SkillDefinition.h
 
@@ -260,7 +110,7 @@ A button that takes mouse clicks but never keyboard or gamepad focus (the Refund
 
 The side panel that describes the skill under the cursor or focus: state and rank, description, what the effects do now and at the next rank, cost, what is still missing, and the refund action when a refund is allowed. To skin it, make a Blueprint subclass with widgets named IconImage, TitleText, StateText, DescriptionText, EffectsText, CostText, RequirementsText, RefundText and RefundButton (any subset) and override On View Set if you want full control.
 
-- **Function** `void SetView(const FSkillView& InView, const USkillCoreStyle* InStyle)`: Shows a skill. Pass the resolved style so colours match the rest of the menu.
+- **Function** `void SetView(const FSkillView& InView, const USkillSetStyle* InStyle)`: Shows a skill. Pass the resolved style so colours match the rest of the menu.
 - **Function** `void ClearView()`: Clears the panel (nothing selected).
 - **Function** `void OnViewSet(const FSkillView& NewView)`: For Blueprint skins: called after the panel was filled.
 - **Property** `FText RefundKeysHint`: Keys shown under the refund line while a refund is allowed. Change it when you use the panel with other controls; empty hides it.
@@ -394,7 +244,7 @@ Optional experience and levels. Put it next to a Skill Component: every level ga
 
 One-call helpers to open and close the skill screen from any Blueprint, level script or controller.
 
-- **Function** `USkillMenuWidget* OpenSkillMenu(APlayerController* PlayerController, USkillComponent* Component, USkillTree* Tree, TSubclassOf<USkillMenuWidget> MenuClass, USkillCoreStyle* Style = nullptr)`: Creates the skill screen for a tree, shows it to the player and moves input to it. Menu Class can be your own Blueprint subclass of Skill Menu Widget; leave it empty for the built-in screen. Style is optional: leave it empty to use the project setting or the built-in look. Returns the widget so you can change its properties or bind its events.
+- **Function** `USkillMenuWidget* OpenSkillMenu(APlayerController* PlayerController, USkillComponent* Component, USkillTree* Tree, TSubclassOf<USkillMenuWidget> MenuClass, USkillSetStyle* Style = nullptr)`: Creates the skill screen for a tree, shows it to the player and moves input to it. Menu Class can be your own Blueprint subclass of Skill Menu Widget; leave it empty for the built-in screen. Style is optional: leave it empty to use the project setting or the built-in look. Returns the widget so you can change its properties or bind its events.
 - **Function** `void CloseSkillMenu(USkillMenuWidget* Menu)`: Closes a menu opened with Open Skill Menu and gives input back to the game.
 
 ## SkillMenuWidget.h
@@ -409,7 +259,7 @@ A tab button that remembers which category it opens. Used by the menu; usable in
 
 The complete skill screen: title, point pools, one tab per category, the tree, the details panel and key hints. Everything is built in code from the tree data and the style asset. The widget classes of the parts are properties, so each part can be replaced with your own Blueprint subclass. Input: mouse click, or keyboard and gamepad through native focus (arrows / stick / d-pad move, Enter / accept buys). Refund one rank (when the owner allows refunds): right click a card, Backspace or Delete, or the gamepad left face button. Respec the shown tree (when Offer Respec is on): T or the gamepad top face button. Previous and next tab: Q and E, or the gamepad shoulder buttons. Close: Escape or the gamepad back button. A feedback line under the tree says what the last action did, or why it was refused.
 
-- **Property** `TObjectPtr<USkillCoreStyle> StyleAsset`: Look and sounds. Empty uses the project setting, then the built-in look.
+- **Property** `TObjectPtr<USkillSetStyle> StyleAsset`: Look and sounds. Empty uses the project setting, then the built-in look.
 - **Property** `FText MenuTitle`: Title at the top of the screen.
 - **Property** `TArray<FName> PoolsToShow`: Pools shown in the header. Empty shows every pool that a skill of the tree costs.
 - **Property** `bool bOfferRespec`: Offers the respec action on this screen (T or the gamepad top face button): every paid rank of the shown tree is given back. Off by default; the game decides when a respec is allowed.
@@ -437,7 +287,7 @@ The complete skill screen: title, point pools, one tab per category, the tree, t
 
 One skill on screen: icon, title, cost, rank badge and state colour, with a button that buys the skill (or its next rank). Built in code. To skin it, make a Blueprint subclass: if your widget tree has widgets named Button, IconImage, TitleText, CostText, RankText and Outline (any subset), they are used instead of the default layout. Mouse, keyboard and gamepad all use the button's native focus and click, so the gamepad accept button buys. A right click refunds one rank when the owner allows refunds. Arrow keys and the d-pad move to the nearest card in that direction by grid position.
 
-- **Function** `void Setup(USkillComponent* InComponent, USkillTree* InTree, FName InSkillId, const USkillCoreStyle* InStyle)`: Connects the node to a skill and shows its current state. Call once after creating the widget.
+- **Function** `void Setup(USkillComponent* InComponent, USkillTree* InTree, FName InSkillId, const USkillSetStyle* InStyle)`: Connects the node to a skill and shows its current state. Call once after creating the widget.
 - **Function** `void Refresh()`: Reads the skill state again and updates colours and texts.
 - **Function** `ESkillPurchaseResult TryPurchase()`: Tries to buy the skill, plays the matching sound and reports the result. This is what a click or the accept button runs.
 - **Function** `ESkillRefundResult TryRefund()`: Tries to refund one rank, plays the matching sound and reports the result. This is what a right click runs.
@@ -463,6 +313,156 @@ One skill on screen: icon, title, cost, rank badge and state colour, with a butt
 A save game object that holds one skill record. Used by the slot functions of the skill component.
 
 - **Property** `FSkillSaveData Data`: The saved points and progress.
+
+## SkillSetSettings.h
+
+### USkillSetSettings
+
+Project settings for SkillSet (Project Settings > Plugins > SkillSet).
+
+- **Property** `TSoftObjectPtr<USkillSetStyle> DefaultStyle`: Style used by the ready-made widgets when a widget has none of its own. Empty uses the built-in look.
+- **Property** `FName DefaultPoolId`: The point pool the sample menu and the helper functions use when none is named.
+
+## SkillSetStyle.h
+
+### USkillSetStyle
+
+Look and sound of the ready-made skill widgets: colours, sizes and sounds in one asset. Create one in the content browser (Miscellaneous > Data Asset > Skill Core Style), edit it, and assign it to the menu widget or to the project settings. Without an asset the built-in defaults are used.
+
+- **Property** `FLinearColor BackgroundColor`: Screen backdrop.
+- **Property** `FLinearColor PanelColor`: Side panel and tab strip.
+- **Property** `FLinearColor NodeFillColor`: Inside colour of a skill card (state colours tint it).
+- **Property** `FLinearColor PanelOutlineColor`: Thin line around panels.
+- **Property** `FLinearColor TextColor`: Main text colour.
+- **Property** `FLinearColor SubtleTextColor`: Secondary text colour (costs, hints).
+- **Property** `FLinearColor LockedColor`: Node tint while the skill is locked.
+- **Property** `FLinearColor AvailableColor`: Node tint while the skill can be bought.
+- **Property** `FLinearColor UnaffordableColor`: Node tint for an available skill the owner cannot afford.
+- **Property** `FLinearColor PurchasedColor`: Tint and outline of a bought skill.
+- **Property** `FLinearColor FocusColor`: Outline of the node that has focus (mouse hover, keyboard or gamepad).
+- **Property** `FLinearColor LineInactiveColor`: Link line between two skills when the first one is not bought.
+- **Property** `FLinearColor LineActiveColor`: Link line when the first skill is bought.
+- **Property** `float LineThickness`: Thickness of the link lines, in pixels.
+- **Property** `float CornerRadius`: Corner radius of cards, tabs and panels, in pixels.
+- **Property** `float OutlineWidth`: Width of the coloured line around a skill card.
+- **Property** `float HighlightScale`: Scale of a skill card under the mouse or focus. 1 turns the effect off.
+- **Property** `FVector2D CellSize`: Pixels per grid cell of the tree.
+- **Property** `FVector2D NodeSize`: Size of one skill node.
+- **Property** `FVector2D IconSize`: Size of the icon on a card and in the details panel.
+- **Property** `FVector2D TreePadding`: Free space around the tree inside its scroll area.
+- **Property** `float DetailsPanelWidth`: Width of the side panel, in pixels.
+- **Property** `float MinZoom`: Smallest zoom of the tree view (1 is full size).
+- **Property** `float MaxZoom`: Largest zoom of the tree view.
+- **Property** `float ZoomStep`: Zoom change per mouse wheel notch or key press.
+- **Property** `float StickPanSpeed`: Pixels per second the gamepad right stick pans at full tilt.
+- **Property** `bool bGamepadCursor`: Gamepad cursor: the left stick moves the system cursor and the bottom face button clicks where it points. The d-pad keeps moving focus. Off by default.
+- **Property** `float GamepadCursorSpeed`: Pixels per second the gamepad cursor moves at full tilt.
+- **Property** `float TriggerZoomSpeed`: Zoom per second the gamepad triggers change at full pull.
+- **Property** `float FitMaxZoom`: Largest zoom Fit To View uses, so a small tree is enlarged but not blown up.
+- **Property** `bool bFitOnOpen`: Fit the whole tree into view when a tab opens.
+- **Property** `int32 TitleFontSize`: Font size of titles.
+- **Property** `int32 BodyFontSize`: Font size of body text.
+- **Property** `int32 NodeFontSize`: Font size of the text on skill cards.
+- **Property** `TSoftObjectPtr<USoundBase> PurchaseSound`: Played after a successful purchase. Leave empty for silence.
+- **Property** `TSoftObjectPtr<USoundBase> DeniedSound`: Played when a purchase is refused (locked, too expensive).
+- **Property** `TSoftObjectPtr<USoundBase> RefundSound`: Played after a successful refund. Leave empty for silence.
+- **Property** `TSoftObjectPtr<USoundBase> FocusSound`: Played when focus moves to another node.
+- **Function** `FLinearColor GetNodeColor(ESkillState State, bool bCanAfford) const`: Tint for a skill state. Used by the node widget and available to your own skins.
+
+## SkillSetTypes.h
+
+### ESkillState
+
+State of one skill for one owner.
+
+### ESkillPurchaseResult
+
+Result of asking for, or attempting, a purchase.
+
+### ESkillRefundResult
+
+Result of asking for, or attempting, a refund.
+
+### ESkillModifierOp
+
+How a value modifier combines with the value it targets.
+
+### FSkillCost
+
+A price: an amount taken from one named point pool.
+
+- **Property** `FName PoolId`: The named pool the points come from, for example "Points" or "Talent".
+- **Property** `int32 Amount`: Points taken from the pool when the skill is bought.
+### FSkillRankCost
+
+The price of one rank of a skill.
+
+- **Property** `TArray<FSkillCost> Costs`: Points taken from named pools for this rank. Empty means the rank is free.
+### FSkillCategory
+
+A tab of a tree. Categories are data, not an enum.
+
+- **Property** `FName CategoryId`: Stable key referenced by the skills of the tree.
+- **Property** `FText Title`: Name shown on the tab.
+- **Property** `TSoftObjectPtr<UTexture2D> Icon`: Optional tab icon.
+### FSkillView
+
+Read-only snapshot of one skill for UI code.
+
+- **Property** `FName TreeId`: Id of the tree.
+- **Property** `FName SkillId`: Id of the skill.
+- **Property** `FName CategoryId`: Id of the category (tab).
+- **Property** `FText Title`: Display name.
+- **Property** `FText Description`: Text shown in the details panel.
+- **Property** `TSoftObjectPtr<UTexture2D> Icon`: Icon texture.
+- **Property** `FVector2D Position`: Position in grid cells inside the category.
+- **Property** `ESkillState State`: State of the skill.
+- **Property** `TArray<FSkillCost> Costs`: Points the next rank costs (the first rank while the skill is not bought). Empty when the skill is free or at its highest rank.
+- **Property** `int32 Rank`: Ranks bought (0 while not bought).
+- **Property** `int32 MaxRank`: Highest rank of the skill (1 for a skill that is bought once).
+- **Property** `int32 FreeRanks`: Ranks given by Grant Skill. They are never refunded.
+- **Property** `TArray<FName> Prerequisites`: Skills that must be bought first.
+- **Property** `TArray<FText> PrerequisiteTitles`: The titles of the prerequisites, in the same order, for display.
+- **Property** `TArray<int32> PrerequisiteRanks`: The rank each prerequisite needs, in the same order (1 unless the skill asks for more).
+- **Property** `bool bAnyPrerequisite`: True when one prerequisite is enough, false when all are needed.
+- **Property** `int32 RequiredTreeRanks`: Ranks that must be bought in the other skills of the tree before this one (0 for none).
+- **Property** `int32 TreeRanks`: Ranks currently bought in the other skills of the tree, to show next to Required Tree Ranks.
+- **Property** `FName ExclusiveGroup`: Name of the exclusive group (None when the skill has none).
+- **Property** `TArray<FText> ExclusiveWith`: Titles of the other skills of the exclusive group.
+- **Property** `FText ExcludedBy`: Title of the bought skill that excludes this one; empty when none does.
+- **Property** `bool bCanAfford`: True when every cost pool holds enough points for the next rank right now.
+- **Property** `bool bCanPurchase`: True when a purchase (of the next rank) would succeed right now.
+- **Property** `ESkillPurchaseResult PurchaseResult`: What Purchase Skill would return right now.
+- **Property** `bool bCanRefund`: True when refunding one rank would succeed right now.
+- **Property** `ESkillRefundResult RefundResult`: What Refund Skill Rank would return right now.
+- **Property** `TArray<FSkillCost> RefundValue`: Points one refunded rank gives back (after the refund percent).
+- **Property** `bool bRefundable`: False when the skill is marked not refundable (permanent).
+- **Property** `FText RefundBlockedBy`: Title of a bought skill that stops the refund (Refund Result is Required By Other).
+- **Property** `TArray<FText> CurrentEffects`: What the effects do at the current rank, one line per effect that describes itself. Empty while not bought.
+- **Property** `TArray<FText> NextEffects`: What the effects will do at the next rank. Empty at the highest rank.
+### FSkillRankSaveData
+
+Saved rank of one skill.
+
+- **Property** `FName SkillId`: Id of the skill.
+- **Property** `int32 Rank`: Ranks bought, including given ranks.
+- **Property** `int32 FreeRanks`: Ranks given by Grant Skill (never refunded).
+- **Property** `TArray<FSkillRankCost> PaidCosts`: What each paid rank cost, oldest first; a refund gives this back. When it is missing, the current rank costs are used.
+### FSkillTreeSaveData
+
+Saved progress of one tree.
+
+- **Property** `FName TreeId`: Id of the tree.
+- **Property** `TArray<FName> Purchased`: Bought skills, in purchase order (of their first rank).
+- **Property** `TArray<FSkillRankSaveData> Ranks`: Rank of each bought skill (format version 2). A bought skill missing here has rank 1, as in version 1 records.
+- **Property** `TArray<FName> Unlocked`: Skills unlocked directly (shown as available without prerequisites).
+### FSkillSaveData
+
+Versioned save record of one skill component. Store it in any save system: it is a plain struct. Effect state (tags, counters, modifiers) is not saved; it is rebuilt by applying the bought skills on load.
+
+- **Property** `int32 Version`: Format version of this record. Written by Write Save Data; checked and migrated by Read Save Data.
+- **Property** `TMap<FName, int32> Points`: Points held per named pool.
+- **Property** `TArray<FSkillTreeSaveData> Trees`: Saved progress of each tree.
 
 ## SkillTree.h
 
@@ -490,7 +490,7 @@ A skill tree: tabs and skills with positions. Any number of trees can exist; a c
 
 One tab of a tree on screen: a pannable, zoomable canvas with a node per skill and a line per prerequisite link. The layout comes from the grid positions in the tree asset and the cell size in the style. View controls: mouse wheel zooms around the cursor; drag empty space (or hold the right or middle button) to pan; the gamepad right stick pans, the triggers zoom and a click of the right stick fits the whole tree; Home fits the tree and plus and minus zoom. Moving focus to a skill pans it into view.
 
-- **Function** `void Setup(USkillComponent* InComponent, USkillTree* InTree, FName InCategoryId, const USkillCoreStyle* InStyle, TSubclassOf<USkillNodeWidget> NodeClass, TSubclassOf<USkillConnectionWidget> ConnectionClass)`: Builds the nodes and links of one category. Pass an empty Category Id for a tree without categories. Node Class and Connection Class replace the default widgets; leave them empty for the built-in ones.
+- **Function** `void Setup(USkillComponent* InComponent, USkillTree* InTree, FName InCategoryId, const USkillSetStyle* InStyle, TSubclassOf<USkillNodeWidget> NodeClass, TSubclassOf<USkillConnectionWidget> ConnectionClass)`: Builds the nodes and links of one category. Pass an empty Category Id for a tree without categories. Node Class and Connection Class replace the default widgets; leave them empty for the built-in ones.
 - **Function** `void Refresh()`: Updates every node and link from the current state.
 - **Function** `void FocusFirstNode()`: Puts focus on the first skill that can be bought, else on the first skill.
 - **Function** `TArray<USkillNodeWidget*> GetNodes() const`: Every node widget of this tab.
